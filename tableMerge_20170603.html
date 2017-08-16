@@ -64,7 +64,7 @@
 
 				if (cellStart && cellEnd) {
 					// 2. 设置新的rowspan和colspan
-					var rowMoveNum = params.upRow - params.downRow;	//?
+					var rowMoveNum = params.upRow - params.downRow;
 					var colMoveNum = params.upCol - params.downCol;
 
 					//3. 判断是否可以合并
@@ -98,7 +98,6 @@
 					if (row >= startRow && row <= endRow &&
 						col >= startCol && col <= endCol &&
 						!isOwn) {
-						console.debug("Hidden Element", "row:" + row + "; col:" + col + ";");
 						// hide
 						element.hidden = true;
 					}
@@ -110,6 +109,12 @@
 				if (params.downCol == params.upCol && params.downRow == params.upRow) {
 					return false;
 				}
+
+				var ri_end = cellEnd.parentNode.rowIndex;
+				var ri_start = cellStart.parentNode.rowIndex;
+				if (ri_end >= ri_start && ri_end < ri_start + cellStart.rowSpan && ri_end + cellEnd.rowSpan !== cellStart.rowSpan + ri_start) {
+				    return false;
+                }
 				return true;
 			}
 

@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 	<link rel="stylesheet" href="table_merge.css">
 	<script src="jquery-1.12.0.min.js"></script>
 </head>
+
 <body>
 	<table id="table_merge" class="table_style"></table>
 
@@ -14,35 +16,35 @@
 			var table_merge = document.querySelector('#table_merge');
 			var tb = document.createElement("tbody");
 			table_merge.appendChild(tb);
-			for(var i = 0; i < 10; i++){
+			for (var i = 0; i < 10; i++) {
 				var row = tb.insertRow(tb.rows.length);
-				for(var j = 0; j < 10; j++){
+				for (var j = 0; j < 10; j++) {
 					var col = row.insertCell(row.cells.length);
 					col.classList.add('table_col_style');
 				}
 			}
 			document.body.appendChild(table_merge);
 
-
+			// 记录鼠标放下抬起的点
 			var mouseParams = {
-				downCol : -1,
-				upCol : -1,
-				downRow : -1,
-				upRow : -1
+				downCol: -1,
+				upCol: -1,
+				downRow: -1,
+				upRow: -1
 			};
 
-			//鼠标按下和抬起时的行列
-			table_merge.onmousedown = function(down_event){
+			// 鼠标按下和抬起时的行列
+			table_merge.onmousedown = function (down_event) {
 				var down_target = down_event.target;
 				mouseParams.downCol = down_target.cellIndex;
 				mouseParams.downRow = down_target.parentNode.rowIndex;
-				//console.log(mouseParams.downRow, mouseParams.downCol);
+				console.log(mouseParams.downRow, mouseParams.downCol);
 			};
-			table_merge.onmouseup = function(up_event){
+			table_merge.onmouseup = function (up_event) {
 				var up_target = up_event.target;
 				mouseParams.upCol = up_target.cellIndex;
 				mouseParams.upRow = up_target.parentNode.rowIndex;
-				//console.log(mouseParams.upRow, mouseParams.upCol);
+				console.log(mouseParams.upRow, mouseParams.upCol);
 				//合并
 				merge(mouseParams);
 			};
@@ -50,111 +52,119 @@
 
 
 
-		var colNum = table_merge.rows[0].cells.length,
-			td = document.querySelectorAll('td');
+			var colNum = table_merge.rows[0].cells.length,
+				td = document.querySelectorAll('td');	// 所有表格
 
-		function merge(params){
+			function merge(params) {
 
-			// 1. 参数预处理，确定起止块
-			params = correctParams(params);
+				// 1. 参数预处理，确定起止块
+				params = correctParams(params);
 
-			var cellStart = td[params.downRow * colNum + params.downCol],
-				cellEnd = td[params.upRow * colNum + params.upCol];
+				var cellStart = td[params.downRow * colNum + params.downCol],
+					cellEnd = td[params.upRow * colNum + params.upCol];
 
-			if (cellStart && cellEnd) {
-				// 2. 设置新的rowspan和colspan
-				var rowMoveNum = params.upRow - params.downRow;
-				var colMoveNum = params.upCol - params.downCol;
+				if (cellStart && cellEnd) {
+					// 2. 设置新的rowspan和colspan
+					var rowMoveNum = params.upRow - params.downRow;	//?
+					var colMoveNum = params.upCol - params.downCol;
 
-				//3. 判断是否可以合并
-				if(!canMerge(params,rowMoveNum,colMoveNum, cellStart, cellEnd)){
-					return ;
+					//3. 判断是否可以合并
+					if (!canMerge(params, rowMoveNum, colMoveNum, cellStart, cellEnd)) {
+						return;
+					}
+
+					/*if (rowMoveNum == 0) {
+						cellStart.colSpan = cellStart.colSpan + cellEnd.colSpan + colMoveNum - 1;
+					} else if (colMoveNum == 0) {
+						cellStart.rowSpan = cellStart.rowSpan + cellEnd.rowSpan + rowMoveNum - 1;
+					} else {
+						cellStart.colSpan = cellStart.colSpan + cellEnd.colSpan + colMoveNum - 1;
+						cellStart.rowSpan = cellStart.rowSpan + cellEnd.rowSpan + rowMoveNum - 1;
+					}*/
+					cellStart.colSpan = cellEnd.colSpan + colMoveNum;
+					cellStart.rowSpan = cellEnd.rowSpan + rowMoveNum;
+					console.debug("colSpan", cellStart.colSpan);
+					console.debug("rowSpan", cellStart.rowSpan);
+
+					cellStart.style.width = cellStart.colSpan * 50 + "px";
+					cellStart.style.height = cellStart.rowSpan * 50 + "px";
+
+					// 4. 删除多余单元格
+					hideTd($("td"), params.downRow, params.downCol, cellEnd.rowSpan + params.upRow - 1, cellEnd.colSpan + params.upCol -
+						1);
 				}
 
-				if (rowMoveNum == 0) {
-					cellStart.colSpan = cellStart.colSpan + cellEnd.colSpan + colMoveNum - 1;
-				} else if (colMoveNum == 0){
-					cellStart.rowSpan = cellStart.rowSpan + cellEnd.rowSpan + rowMoveNum - 1;
-				} else {
-					cellStart.colSpan = cellStart.colSpan + cellEnd.colSpan + colMoveNum - 1;
-					cellStart.rowSpan = cellStart.rowSpan + cellEnd.rowSpan + rowMoveNum - 1;
+			}
+
+			function hideTd($tdArray, startRow, startCol, endRow, endCol) {
+				$.each($tdArray, function (index, element) {
+					var row = Math.floor(index / colNum);
+					var col = index % colNum;
+
+					var isOwn = (row == startRow && col == startCol);
+					if (row >= startRow && row <= endRow &&
+						col >= startCol && col <= endCol &&
+						!isOwn) {
+						console.debug("Hidden Element", "row:" + row + "; col:" + col + ";");
+						// hide
+						element.hidden = true;
+					}
+				});
+			}
+
+			function canMerge(params, rowMoveNum, colMoveNum, cellStart, cellEnd) {
+				// down 和 up 在同一块内，则不合并
+				if (params.downCol == params.upCol && params.downRow == params.upRow) {
+					return false;
 				}
 
-				cellStart.style.width = cellStart.colSpan * 50 + "px";
-				cellStart.style.height = cellStart.rowSpan * 50+ "px";
+				/*if ((rowMoveNum == 0 && cellStart.colSpan !== cellEnd.colSpan) || (colMoveNum == 0 && cellStart.colSpan !==
+						cellEnd.colSpan)) {
+					return false;
+				}*/
 
-				// 4. 删除多余单元格
-				hideTd($("td"), params.downRow, params.downCol, cellEnd.rowSpan + params.upRow - 1, cellEnd.colSpan + params.upCol - 1);
+				return true;
 			}
 
-		}
+			/**
+			 * @param params: 坐标
+			 **/
+			function correctParams(params) {
 
-		function hideTd($tdArray, startRow, startCol, endRow, endCol){
-			$.each($tdArray, function(index, element){
-				var row = Math.floor(index/colNum);
-				var col = index % colNum;
+				if (params.downRow >= params.upRow && params.downCol >= params.upCol) {
+					//  右下角，交换
+					var temp = params.downRow;
+					params.downRow = params.upRow;
+					params.upRow = temp;
 
-				var isOwn = (row == startRow && col == startCol);
-				if(row >= startRow && row <= endRow
-					&& col >= startCol && col <= endCol
-					&& !isOwn){
-					console.debug("Hidden Element", "row:" + row + "; col:" + col + ";");
-					// hide
-					element.hidden = true;
+					temp = params.downCol;
+					params.downCol = params.upCol;
+					params.upCol = temp;
+
+				} else if (params.downRow > params.upRow && params.downCol < params.upCol) {
+					// 左下角
+					var temp = params.downRow;
+					params.downRow = params.upRow;
+					params.upRow = temp;
+				} else if (params.downRow < params.upRow && params.downCol > params.upCol) {
+					// 右上角
+					var temp = params.downCol;
+					params.downCol = params.upCol;
+					params.upCol = temp;
 				}
-			});
-		}
-
-		function canMerge(params,rowMoveNum,colMoveNum,cellStart, cellEnd){
-			// down 和 up 在同一块内，则不合并
-			if(params.downCol == params.upCol && params.downRow == params.upRow){
-				return false;
+				return params;
 			}
 
-			if((rowMoveNum == 0 && cellStart.colSpan !== cellEnd.colSpan) || (colMoveNum == 0 && cellStart.colSpan !== cellEnd.colSpan)){
-				return false;
+			// TODO 行列计算
+			function rowColCompute(num) {
+				return Math.floor((num - 10) / 56);
 			}
 
-			return true;
-		}
-
-		function correctParams(params){
-
-			if(params.downRow >= params.upRow && params.downCol >= params.upCol){
-				//  右下角，交换
-				var temp = params.downRow;
-				params.downRow = params.upRow;
-				params.upRow = temp;
-
-				temp = params.downCol;
-				params.downCol = params.upCol;
-				params.upCol = temp;
-
-			} else if (params.downRow > params.upRow && params.downCol < params.upCol) {
-				// 左下角
-				var temp = params.downRow;
-				params.downRow = params.upRow;
-				params.upRow = temp;
-			} else if (params.downRow < params.upRow && params.downCol > params.upCol) {
-				// 右上角
-				var temp = params.downCol;
-				params.downCol = params.upCol;
-				params.upCol = temp;
-			}
-			return params;
-		}
-
-		// TODO 行列计算
-		function rowColCompute(num) {
-			return Math.floor((num - 10) / 56);
-		}
-
-		//TODO 是否是同一行或列
+			//TODO 是否是同一行或列
 			function isSameColOrRow(col1, col2) {
 				return rowColCompute(col1) - rowColCompute(col2);
 			}
 		};
-
 	</script>
 
 </body>

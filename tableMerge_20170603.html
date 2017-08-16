@@ -1,43 +1,29 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/1.9.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="table_merge.css">
+	<script src="jquery-1.12.0.min.js"></script>
 </head>
-
 <body>
-
-	<table id="table_merge">
-		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-		</tr>
-		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-		</tr>
-		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-		</tr>
-		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-		</tr>
-
-	</table>
+	<table id="table_merge" class="table_style"></table>
 
 	<script type="text/javascript">
-		$(function(){
-			
+		onload = function () {
+
+			//10*10表格
+			var table_merge = document.querySelector('#table_merge');
+			var tb = document.createElement("tbody");
+			table_merge.appendChild(tb);
+			for(var i = 0; i < 10; i++){
+				var row = tb.insertRow(tb.rows.length);
+				for(var j = 0; j < 10; j++){
+					var col = row.insertCell(row.cells.length);
+					col.classList.add('table_col_style');
+				}
+			}
+			document.body.appendChild(table_merge);
+
+
 			var mouseParams = {
 				downCol : -1,
 				upCol : -1,
@@ -45,118 +31,124 @@
 				upRow : -1
 			};
 
-			var tableMerge = $("#table_merge");
-
-			tableMerge.find("td").mousedown(function(){
-				mouseParams.downCol = this.cellIndex;
-				console.debug("downCol", this.cellIndex);
-			}).mouseup(function(){
-				mouseParams.upCol = this.cellIndex;
-				console.debug("upCol", this.cellIndex);
-			}).css("width", 100).css("height", 100).css("border", "1px solid ");
-
-			tableMerge.find("tr").mousedown(function(){
-				mouseParams.downRow = this.rowIndex;
-				console.debug("downRow", this.rowIndex);
-			}).mouseup(function(){
-				mouseParams.upRow = this.rowIndex;
-				console.debug("upRow", this.rowIndex);
-				
+			//鼠标按下和抬起时的行列
+			table_merge.onmousedown = function(down_event){
+				var down_target = down_event.target;
+				mouseParams.downCol = down_target.cellIndex;
+				mouseParams.downRow = down_target.parentNode.rowIndex;
+				//console.log(mouseParams.downRow, mouseParams.downCol);
+			};
+			table_merge.onmouseup = function(up_event){
+				var up_target = up_event.target;
+				mouseParams.upCol = up_target.cellIndex;
+				mouseParams.upRow = up_target.parentNode.rowIndex;
+				//console.log(mouseParams.upRow, mouseParams.upCol);
+				//合并
 				merge(mouseParams);
-			});
+			};
 
-			var rowNum = document.getElementById("table_merge").rows.length;
-			var colNum = document.getElementById("table_merge").rows[0].cells.length;
-			function merge(params){
 
-				// 1. 判断可不可以合并
-				params = correctParams(params);
 
+
+		var colNum = table_merge.rows[0].cells.length,
+			td = document.querySelectorAll('td');
+
+		function merge(params){
+
+			// 1. 参数预处理，确定起止块
+			params = correctParams(params);
+
+			var cellStart = td[params.downRow * colNum + params.downCol],
+				cellEnd = td[params.upRow * colNum + params.upCol];
+
+			if (cellStart && cellEnd) {
 				// 2. 设置新的rowspan和colspan
-				var $cellStart = $("td").get(params.downRow * colNum + params.downCol);
-				var $cellend = $("td").get(params.upRow * colNum + params.upCol);
+				var rowMoveNum = params.upRow - params.downRow;
+				var colMoveNum = params.upCol - params.downCol;
 
-				var rowSpanNum = params.upRow - params.downRow;
-				var colSpanNum = params.upCol - params.downCol;
-
-				tempRowSpan = (rowSpanNum + $cellend.rowSpan);
-				tempColSpan = (colSpanNum + $cellend.colSpan);
-				if(!canMerge(params,rowSpanNum,colSpanNum,tempRowSpan,tempColSpan,$cellend)){
+				//3. 判断是否可以合并
+				if(!canMerge(params,rowMoveNum,colMoveNum, cellStart, cellEnd)){
 					return ;
 				}
 
-				$cellStart.rowSpan = tempRowSpan;
-				$cellStart.colSpan = tempColSpan;
+				if (rowMoveNum == 0) {
+					cellStart.colSpan = cellStart.colSpan + cellEnd.colSpan + colMoveNum - 1;
+				} else if (colMoveNum == 0){
+					cellStart.rowSpan = cellStart.rowSpan + cellEnd.rowSpan + rowMoveNum - 1;
+				} else {
+					cellStart.colSpan = cellStart.colSpan + cellEnd.colSpan + colMoveNum - 1;
+					cellStart.rowSpan = cellStart.rowSpan + cellEnd.rowSpan + rowMoveNum - 1;
+				}
 
+				cellStart.style.width = cellStart.colSpan * 50 + "px";
+				cellStart.style.height = cellStart.rowSpan * 50+ "px";
 
-				// 3. 设置宽度
-				$($cellStart).css("width", $cellStart.colSpan * 100 + "px")
-							.css("height", $cellStart.rowSpan * 100 + "px");
-
-				console.debug("$cellStart.rowSpan", $cellStart.rowSpan);
-				console.debug("$cellStart.colSpan", $cellStart.colSpan);
-				
 				// 4. 删除多余单元格
-				hideTd($("td"), params.downRow, params.downCol, $cellend.rowSpan + params.upRow - 1, $cellend.colSpan + params.upCol - 1);
+				hideTd($("td"), params.downRow, params.downCol, cellEnd.rowSpan + params.upRow - 1, cellEnd.colSpan + params.upCol - 1);
 			}
 
-			function hideTd($tdArray, startRow, startCol, endRow, endCol){
-				$.each($tdArray, function(index, element){
-					var row = Math.floor(index/colNum);
-					var col = index % colNum;
-					
-					var isOwn = (row == startRow && col == startCol);
-					if(row >= startRow && row <= endRow
-						&& col >= startCol && col <= endCol
-						&& !isOwn){
-						console.debug("Hidden Element", "row:" + row + "; col:" + col + ";");
-						// hide
-						element.hidden = true;		
-					}
-					//console.debug("element", element);
-				});
-			}
+		}
 
-			function canMerge(params,rowSpanNum,colSpanNum,tempRowSpan,tempColSpan,$cellend){
-				//
-				if(params.downCol == params.upCol && params.downRow == params.upRow){
-					return false;
+		function hideTd($tdArray, startRow, startCol, endRow, endCol){
+			$.each($tdArray, function(index, element){
+				var row = Math.floor(index/colNum);
+				var col = index % colNum;
+
+				var isOwn = (row == startRow && col == startCol);
+				if(row >= startRow && row <= endRow
+					&& col >= startCol && col <= endCol
+					&& !isOwn){
+					console.debug("Hidden Element", "row:" + row + "; col:" + col + ";");
+					// hide
+					element.hidden = true;
 				}
+			});
+		}
 
-				if((rowSpanNum == 0 || colSpanNum == 0) && (tempRowSpan !== $cellend.rowSpan && tempColSpan !== $cellend.colSpan)){
-					return false;
-				}
-
-				return true;
+		function canMerge(params,rowMoveNum,colMoveNum,cellStart, cellEnd){
+			// down 和 up 在同一块内，则不合并
+			if(params.downCol == params.upCol && params.downRow == params.upRow){
+				return false;
 			}
 
-			function correctParams(params){
-				
-				if(params.downRow >= params.upRow && params.downCol >= params.upCol){
-					//  右下角，交换
-					var temp = params.downRow;
-					params.downRow = params.upRow;
-					params.upRow = temp;
-
-					temp = params.downCol;
-					params.downCol = params.upCol;
-					params.upCol = temp;
-
-				} else if (params.downRow > params.upRow && params.downCol < params.upCol) {
-					// 左下角
-					var temp = params.downRow;
-					params.downRow = params.upRow;
-					params.upRow = temp;
-				} else if (params.downRow < params.upRow && params.downCol > params.upCol) {
-					// 右上角
-					var temp = params.downCol;
-					params.downCol = params.upCol;
-					params.upCol = temp;
-				}
-				return params;
+			if((rowMoveNum == 0 && cellStart.colSpan !== cellEnd.colSpan) || (colMoveNum == 0 && cellStart.colSpan !== cellEnd.colSpan)){
+				return false;
 			}
-		});
 
+			return true;
+		}
+
+		function correctParams(params){
+
+			if(params.downRow >= params.upRow && params.downCol >= params.upCol){
+				//  右下角，交换
+				var temp = params.downRow;
+				params.downRow = params.upRow;
+				params.upRow = temp;
+
+				temp = params.downCol;
+				params.downCol = params.upCol;
+				params.upCol = temp;
+
+			} else if (params.downRow > params.upRow && params.downCol < params.upCol) {
+				// 左下角
+				var temp = params.downRow;
+				params.downRow = params.upRow;
+				params.upRow = temp;
+			} else if (params.downRow < params.upRow && params.downCol > params.upCol) {
+				// 右上角
+				var temp = params.downCol;
+				params.downCol = params.upCol;
+				params.upCol = temp;
+			}
+			return params;
+		}
+
+		//行列计算
+		function rowColCompute(num) {
+			return Math.floor((num - 10) / 56);
+		}
+		};
 
 	</script>
 

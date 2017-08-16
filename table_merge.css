@@ -1,0 +1,13 @@
+body{
+	-webkit-user-select: none;
+}
+
+.table_style{
+	/*margin: 0 auto;*/
+}
+
+.table_col_style{
+	width: 50px;
+	height: 50px;
+	border: 1px solid #666666;
+}

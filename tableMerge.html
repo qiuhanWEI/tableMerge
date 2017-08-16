@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="text/javascript" src="jquery-1.12.0.min.js"></script>
+</head>
+<body>
+
+<table id="table_merge" border="1" cellpadding="50">
+    <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr><tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr><tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr><tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+
+</table>
+
+
+<script type="text/javascript">
+    var params={
+    	down_col: 0,
+    	up_col: 0,
+    	down_row: 0,
+    	up_row: 0
+    };
+    $(function () {
+	    $("#table_merge > tbody > tr > td").mousedown(function (e){
+            params.down_col = this.cellIndex;
+
+	    });
+        $("#table_merge > tbody > tr").mousedown(function () {
+	        params.down_row = this.rowIndex;
+        });
+	    $("#table_merge > tbody > tr > td").mouseup(function (){
+		    params.up_col = this.cellIndex;
+	    });
+        $("#table_merge > tbody > tr").mouseup(function () {
+	        params.up_row = this.rowIndex;
+
+//	        var down_element = $("#table_merge tr").eq(params.down_row).find("td").eq(params.down_col);
+//	        var up_element = $("#table_merge tr").eq(params.up_row).find("td").eq(params.up_col);
+
+	        if(params.down_row === params.up_row){
+	        	if(params.up_col < params.down_col){
+			        var tmp = params.up_col;
+			        params.up_col = params.down_col;
+			        params.down_col = tmp;
+                }
+		        var down_element = $("#table_merge tr").eq(params.down_row).find("td").eq(params.down_col);
+		        var up_element = $("#table_merge tr").eq(params.up_row).find("td").eq(params.up_col);
+
+		        var del_len = Math.abs(params.up_col - params.down_col);
+
+		        for (var i = 0; i < del_len; i++) {
+			        up_element.prevObject[params.up_col - i].style.display="none";
+		        }
+		        down_element[0].colSpan += del_len;////////////
+	        }else if(params.down_col === params.up_col){
+		        if(params.up_row < params.down_row){
+			        var tmp = params.up_row;
+			        params.up_row = params.down_row;
+			        params.down_row = tmp;
+		        }
+		        var down_element = $("#table_merge tr").eq(params.down_row).find("td").eq(params.down_col);
+		        var del_len = Math.abs(params.up_row - params.down_row);
+
+		        for (var i = 0; i < del_len; i++) {
+			        $("#table_merge tr").eq(params.up_row - i).find("td").eq(params.up_col).hide();
+		        }
+		        down_element[0].rowSpan += del_len;////////////
+
+	        }
+	        console.log(params);
+        });
+    })
+</script>
+
+</body>
+</html>

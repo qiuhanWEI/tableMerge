@@ -144,10 +144,15 @@
 			return params;
 		}
 
-		//行列计算
+		// TODO 行列计算
 		function rowColCompute(num) {
 			return Math.floor((num - 10) / 56);
 		}
+
+		//TODO 是否是同一行或列
+			function isSameColOrRow(col1, col2) {
+				return rowColCompute(col1) - rowColCompute(col2);
+			}
 		};
 
 	</script>

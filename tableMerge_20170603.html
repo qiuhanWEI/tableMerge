@@ -37,19 +37,14 @@
 				var down_target = down_event.target;
 				mouseParams.downCol = down_target.cellIndex;
 				mouseParams.downRow = down_target.parentNode.rowIndex;
-				console.log(mouseParams.downRow, mouseParams.downCol);
 			};
 			table_merge.onmouseup = function (up_event) {
 				var up_target = up_event.target;
 				mouseParams.upCol = up_target.cellIndex;
 				mouseParams.upRow = up_target.parentNode.rowIndex;
-				console.log(mouseParams.upRow, mouseParams.upCol);
 				//合并
 				merge(mouseParams);
 			};
-
-
-
 
 			var colNum = table_merge.rows[0].cells.length,
 				td = document.querySelectorAll('td');	// 所有表格
@@ -68,14 +63,12 @@
 					var colMoveNum = params.upCol - params.downCol;
 
 					//3. 判断是否可以合并
-					if (!canMerge(params, rowMoveNum, colMoveNum, cellStart, cellEnd)) {
+					if (!canMerge(params, cellStart, cellEnd)) {
 						return;
 					}
 
 					cellStart.colSpan = cellEnd.colSpan + colMoveNum;
 					cellStart.rowSpan = cellEnd.rowSpan + rowMoveNum;
-					console.debug("colSpan", cellStart.colSpan);
-					console.debug("rowSpan", cellStart.rowSpan);
 
 					cellStart.style.width = cellStart.colSpan * 50 + "px";
 					cellStart.style.height = cellStart.rowSpan * 50 + "px";
@@ -104,7 +97,7 @@
 				}
 			}
 
-			function canMerge(params, rowMoveNum, colMoveNum, cellStart, cellEnd) {
+			function canMerge(params, cellStart, cellEnd) {
 				// down 和 up 在同一块内，则不合并
 				if (params.downCol == params.upCol && params.downRow == params.upRow) {
 					return false;
@@ -147,15 +140,6 @@
 				return params;
 			}
 
-			// TODO 行列计算
-			function rowColCompute(num) {
-				return Math.floor((num - 10) / 56);
-			}
-
-			//TODO 是否是同一行或列
-			function isSameColOrRow(col1, col2) {
-				return rowColCompute(col1) - rowColCompute(col2);
-			}
 		};
 	</script>
 
